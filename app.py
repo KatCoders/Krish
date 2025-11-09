@@ -452,18 +452,6 @@ with st.spinner("🌍 पर्यावरण डेटा लोड कर र
         
 
 # ------------------- Enhanced Groq LLM with Market Rate Tool -------------------
-# Handle navigation
-nav = st.session_state.get("nav", "home")  # Default to home
-
-if nav == "tomato":
-    from pages.Tomato_Expert import main as tomato_page
-    tomato_page()
-    st.stop()
-if nav == "crop":
-    from pages.crop import main as crop_page
-    crop_page()
-    st.stop()
-# Default page content continues here...
 
     
 def process_text_input(user_input: str):
@@ -527,53 +515,7 @@ def process_text_input(user_input: str):
 
 # ------------------- Tomato Disease Detection Section -------------------
 
-with st.sidebar:
-    st.header("🚜 Krish AI Menu")
 
-    if st.button("🏡 होम"):
-        st.session_state.nav = "home"
-        st.rerun()
-
-    if st.button("🍅 टमाटर विशेषज्ञ"):
-        st.session_state.nav = "tomato"
-        st.rerun()
-    if st.button("🌾 फसल सलाह WhatsApp"):
-        st.session_state.nav = "crop"
-        st.rerun()
-
-    st.markdown("---")
-
-    st.subheader("💬 चैट उपकरण")
-    if st.button("♻️ चैट रीसेट"):
-        st.session_state["chat_history"] = []
-        st.success("✅ चैट रीसेट कर दिया गया!")
-
-    # Export (kept simple)
-    if st.button("📥 चैट एक्सपोर्ट"):
-        chats = st.session_state.get("chat_history", [])
-        if chats:
-            export_data = {
-                "timestamp": datetime.now().isoformat(),
-                "location": st.session_state.get("user_city", "अज्ञात"),
-                "chat_history": chats
-            }
-            st.download_button(
-                label="💾 JSON डाउनलोड करें",
-                data=json.dumps(export_data, ensure_ascii=False, indent=2),
-                file_name=f"krish_chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json",
-                key="dl_chat_json"
-            )
-        else:
-            st.info("⚠️ कोई चैट हिस्ट्री उपलब्ध नहीं है")
-
-    st.markdown("---")
-    st.subheader("⚙️ सेटिंग्स")
-    st.session_state["voice_enabled"] = st.checkbox(
-        "🔊 आवाज़ चालू करें",
-        value=st.session_state.get("voice_enabled", True),
-        key="voice_toggle",
-    )
 
 # ------------------- Voice Input Section -------------------
 st.markdown("""
@@ -698,12 +640,267 @@ if user_input := st.chat_input("✍️ अपना सवाल यहाँ �
     process_text_input(user_input)
 
 # ------------------- Enhanced Footer Section -------------------
+def show_tomato_detection_page():
+    st.markdown('<h2 class="main-title">🍅 टमाटर रोग पहचान विशेषज्ञ</h2>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='background-color: #e8f5e9; padding: 1.5rem; border-radius: 10px; margin: 1rem 0;'>
+        <h4 style='color: #2e7d32;'>📸 टमाटर के पत्ते की फोटो अपलोड करें</h4>
+        <p>हमारा AI मॉडल तुरंत बीमारी की पहचान करेगा और उपचार सुझाएगा।</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        uploaded_file = st.file_uploader(
+            "🖼️ टमाटर पत्ती की छवि चुनें",
+            type=["jpg", "jpeg", "png"],
+            help="JPG, JPEG या PNG फॉर्मेट में तस्वीर अपलोड करें"
+        )
+        
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            st.image(image, caption="अपलोड की गई छवि", use_container_width=True)
+            
+            if st.button("🔍 रोग की जांच करें", type="primary", use_container_width=True):
+                with st.spinner("🔬 विश्लेषण कर रहे हैं..."):
+                    try:
+                        # Get prediction
+                        disease_name, confidence = predict_disease(image)
+                        
+                        # Store in session state
+                        st.session_state.last_prediction = {
+                            "disease": disease_name,
+                            "confidence": confidence,
+                            "timestamp": datetime.now()
+                        }
+                        st.session_state.last_uploaded_image = uploaded_file.name
+                        
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ त्रुटि: {str(e)}")
+                        logger.error(f"Prediction error: {e}")
+    
+    with col2:
+        if st.session_state.last_prediction:
+            pred = st.session_state.last_prediction
+            disease_name = pred["disease"]
+            confidence = pred["confidence"]
+            
+            # Translate disease name to Hindi
+            disease_hindi = disease_name.replace("Tomato___", "").replace("_", " ")
+            is_healthy = "healthy" in disease_name.lower()
+            
+            if is_healthy:
+                st.markdown(f"""
+                <div class="healthy-card">
+                    <h3>✅ स्वस्थ पौधा!</h3>
+                    <p style='font-size: 1.2rem; margin: 1rem 0;'>
+                        <strong>पहचान:</strong> {disease_hindi}
+                    </p>
+                    <p style='font-size: 1.1rem;'>
+                        <strong>विश्वास स्तर:</strong> {confidence*100:.1f}%
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="disease-card">
+                    <h3>⚠️ रोग पहचाना गया</h3>
+                    <p style='font-size: 1.2rem; margin: 1rem 0;'>
+                        <strong>रोग का नाम:</strong> {disease_hindi}
+                    </p>
+                    <p style='font-size: 1.1rem;'>
+                        <strong>विश्वास स्तर:</strong> {confidence*100:.1f}%
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Confidence meter
+            st.markdown(f"""
+            <div class="confidence-meter">
+                <div class="confidence-fill" style="width: {confidence*100}%">
+                    {confidence*100:.1f}%
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Get AI recommendations
+            st.markdown("### 🤖 AI सुझाव और उपचार")
+            
+            with st.spinner("💭 विशेषज्ञ सलाह तैयार कर रहे हैं..."):
+                query = f"टमाटर के पौधे में {disease_hindi} रोग है। इसका उपचार और रोकथाम के उपाय बताएं।"
+                try:
+                    response = get_llm_response(query)
+                    st.markdown(f"""
+                    <div class="prediction-box">
+                        {response}
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Add to chat history
+                    st.session_state.chat_history.append({
+                        "role": "assistant",
+                        "content": f"रोग पहचान: {disease_hindi} ({confidence*100:.1f}% विश्वास)\n\n{response}",
+                        "type": "tomato_prediction",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    
+                except Exception as e:
+                    st.error(f"❌ सलाह प्राप्त करने में समस्या: {str(e)}")
+        else:
+            st.info("👈 कृपया पहले एक छवि अपलोड करें")
+    
+    # Additional Info Section
+    st.markdown("---")
+    st.markdown("""
+    ### 📚 टमाटर की सामान्य बीमारियां
+    
+    हमारा मॉडल निम्नलिखित बीमारियों की पहचान कर सकता है:
+    - 🦠 बैक्टीरियल स्पॉट
+    - 🍂 अर्ली ब्लाइट
+    - 🍃 लेट ब्लाइट
+    - 🌿 लीफ मोल्ड
+    - 🔴 सेप्टोरिया लीफ स्पॉट
+    - 🕷️ स्पाइडर माइट्स
+    - 🎯 टारगेट स्पॉट
+    - 🟡 येलो लीफ कर्ल वायरस
+    - 🌀 मोज़ेक वायरस
+    - ✅ स्वस्थ पौधा
+    """)
 
-# Footer
+# ------------------- Crop Advice WhatsApp Page -------------------
+def show_crop_whatsapp_page():
+    st.markdown('<h2 class="main-title">🌾 फसल सलाह WhatsApp सेवा</h2>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='background-color: #e8f5e9; padding: 2rem; border-radius: 10px; text-align: center;'>
+        <h3>📱 WhatsApp पर तुरंत सलाह पाएं</h3>
+        <p style='font-size: 1.1rem; margin: 1rem 0;'>
+            हमारे कृषि विशेषज्ञ WhatsApp पर 24/7 उपलब्ध हैं
+        </p>
+        <a href='https://wa.me/1234567890' target='_blank' 
+           style='background-color: #25D366; color: white; padding: 15px 30px; 
+                  text-decoration: none; border-radius: 25px; font-size: 1.2rem;
+                  display: inline-block; margin-top: 1rem;'>
+            💬 WhatsApp पर संपर्क करें
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("""
+    ### 📞 सेवाएं:
+    - 🌾 फसल चयन सलाह
+    - 🌱 बीज और खाद की जानकारी
+    - 💰 मंडी भाव अपडेट
+    - 🌧️ मौसम आधारित चेतावनी
+    - 🐛 कीट नियंत्रण उपाय
+    """)
+
+# ------------------- Home Page -------------------
+def show_home_page():
+    st.markdown('<h2 class="main-title">🌾 KRISH AI आधारित फसल सलाह सहायक</h2>', unsafe_allow_html=True)
+    
+    # Voice Input Section
+    st.markdown("""
+    <div class="chat-container">
+        <h4>👋 नमस्ते किसान भाई!</h4>
+        <p>मैं आपका AI कृषि सलाहकार हूं। आप मुझसे निम्नलिखित विषयों पर सवाल पूछ सकते हैं:</p>
+        <ul>
+            <li>🌾 फसल की सिफारिश</li>
+            <li>🌱 मिट्टी की देखभाल</li>
+            <li>🌧️ मौसम आधारित सलाह</li>
+            <li>💰 मंडी भाव</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Audio file upload
+    st.subheader("🎤 आवाज़ से सवाल पूछें")
+    audio_file = st.file_uploader("अपनी आवाज़ फ़ाइल अपलोड करें", type=["wav", "mp3"])
+    
+    if audio_file:
+        st.audio(audio_file)
+        if st.button("🎙️ सवाल प्रोसेस करें"):
+            with st.spinner("🤖 आवाज़ को समझ रहे हैं..."):
+                st.info("आवाज़ प्रोसेसिंग फीचर जल्द आ रहा है!")
+    
+    # Text Input
+    if user_input := st.chat_input("✍️ अपना सवाल यहाँ लिखें..."):
+        with st.chat_message("user"):
+            st.markdown(f"✍️ {user_input}")
+        
+        with st.chat_message("assistant"):
+            with st.spinner("🤖 जवाब तैयार कर रहे हैं..."):
+                response = get_llm_response(user_input)
+                st.markdown(f"🤖 {response}")
+        
+        # Store in history
+        st.session_state.chat_history.append({
+            "role": "user",
+            "content": user_input,
+            "timestamp": datetime.now().isoformat()
+        })
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": response,
+            "timestamp": datetime.now().isoformat()
+        })
+
+# ------------------- Sidebar Navigation -------------------
+with st.sidebar:
+    st.header("🚜 Krish AI Menu")
+    
+    if st.button("🏡 होम", use_container_width=True):
+        st.session_state.nav = "home"
+        st.rerun()
+    
+    if st.button("🍅 टमाटर विशेषज्ञ", use_container_width=True):
+        st.session_state.nav = "tomato"
+        st.rerun()
+    
+    if st.button("🌾 फसल सलाह WhatsApp", use_container_width=True):
+        st.session_state.nav = "crop"
+        st.rerun()
+    
+    st.markdown("---")
+    
+    st.subheader("💬 चैट उपकरण")
+    if st.button("♻️ चैट रीसेट", use_container_width=True):
+        st.session_state.chat_history = []
+        st.session_state.last_prediction = None
+        st.success("✅ चैट रीसेट हो गया!")
+    
+    if st.button("📥 चैट एक्सपोर्ट", use_container_width=True):
+        if st.session_state.chat_history:
+            export_data = {
+                "timestamp": datetime.now().isoformat(),
+                "location": st.session_state.user_city,
+                "chat_history": st.session_state.chat_history
+            }
+            st.download_button(
+                label="💾 JSON डाउनलोड करें",
+                data=json.dumps(export_data, ensure_ascii=False, indent=2),
+                file_name=f"krish_chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json"
+            )
+        else:
+            st.info("⚠️ कोई चैट नहीं है")
+
+# ------------------- Main Navigation Logic -------------------
+if st.session_state.nav == "home":
+    show_home_page()
+elif st.session_state.nav == "tomato":
+    show_tomato_detection_page()
+elif st.session_state.nav == "crop":
+    show_crop_whatsapp_page()
+
+# ------------------- Footer -------------------
 st.markdown("""
 <div style='text-align: center; color: #666; margin-top: 2rem; padding: 1rem; border-top: 1px solid #ddd;'>
     <p>🌾 <strong>AI कृषि सहायक (By AgroMind)</strong> - आपके खेत का डिजिटल मित्र</p>
-    <p><small>संस्करण 3.0 | मंडी भाव सुविधा जोड़ी गई!</small></p>
-    <p><small>Powered by Groq AI, Data.gov.in, SoilGrids & WeatherAPI</small></p>
+    <p><small>संस्करण 4.0 | टमाटर रोग पहचान जोड़ा गया!</small></p>
 </div>
 """, unsafe_allow_html=True)
