@@ -136,6 +136,59 @@ st.markdown("""
 """, unsafe_allow_html=True)
 # ------------------- Authentication Check -------------------
 # auth.py
+from auth import google_login
+import streamlit as st
+
+if "user" not in st.session_state:
+    st.markdown("""
+    <style>
+        body {
+            background: linear-gradient(to top right, #d1ffea, #f4fff9);
+        }
+        .login-box {
+            max-width: 450px;
+            margin: 80px auto;
+            background: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .login-box h2 {
+            color: #2e8b57;
+            font-size: 30px;
+            font-weight: 700;
+        }
+        .login-box p {
+            font-size: 16px;
+            color: #555;
+        }
+        .google-btn {
+            margin-top: 20px;
+        }
+        .brand-logo {
+            width: 80px;
+            margin-bottom: 10px;
+        }
+    </style>
+
+    <div class="login-box">
+        <img src="https://cdn-icons-png.flaticon.com/128/756/756669.png" class="brand-logo" alt="KRISH Logo"/>
+        <h2>🌾 KRISH कृषि सहायक</h2>
+        <p>स्मार्ट खेती के लिए डिजिटल साथी!<br>
+        मंडी भाव, फसल सुझाव, मौसम और बहुत कुछ...</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+            google_login()  # Renders the Google sign-in button
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.stop()
+
 
 
 if "user" not in st.session_state:
@@ -675,19 +728,25 @@ if audio_file is not None:
         img = Image.open(audio_file)
 
         with st.spinner("🔍 टमाटर रोग की भविष्यवाणी कर रहे हैं..."):
-            disease_name, confidence = predict_disease(img)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+              tmp_file.write(audio_file.read())
+              img_path = tmp_file.name
 
-        st.success(f"🩺 पहचाना गया रोग: **{disease_name}** ({confidence*100:.1f}% भरोसा)")
-
-        # Query LLM
-        query = f"""
-        टमाटर के पौधे में '{disease_name}' बीमारी पाई गई है।
-        इसके घरेलू और रासायनिक उपचार बताएं। tool_search_tomato_kb का उपयोग करें।
-        """
-
+    with st.spinner("🔍 टमाटर रोग खोज रहे हैं..."):
+        # ✅ Invoke the ML tool + LLM together
+        agent = get_agent()
+        result = agent.invoke({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"कृपया इस छवि से रोग पहचानें और उपचार सुझाएं। छवि पथ: {img_path}"
+                }
+            ]
+        })
         with st.spinner("🤖 विशेषज्ञ सलाह ले रहे हैं..."):
-            llm_response = get_llm_response(query)
-
+            llm_response = result["messages"][-1].content
+     
+         
         # Show response in chat
         with st.chat_message("assistant"):
             st.markdown(f"🤖 {llm_response}")
@@ -699,13 +758,7 @@ if audio_file is not None:
                 st.audio(audio_bytes, format="audio/mp3")
 
         # Save to history
-        st.session_state.chat_history.append({
-            "role": "assistant",
-            "content": f"Diagnosed: {disease_name}\nConfidence: {confidence:.2%}\nAdvice:\n{llm_response}",
-            "type": "tomato_prediction",
-            "timestamp": datetime.now().isoformat()
-        })
-
+     
 
            
 
@@ -732,4 +785,3 @@ st.markdown("""
     <p><small>Powered by Groq AI, Data.gov.in, SoilGrids & WeatherAPI</small></p>
 </div>
 """, unsafe_allow_html=True)
-
