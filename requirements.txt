@@ -1,0 +1,37 @@
+# Web / Streamlit
+streamlit
+streamlit-webrtc
+streamlit-geolocation
+streamlit-audiorec
+
+# Data handling
+numpy
+pandas
+scikit-learn
+joblib
+
+# Image handling and machine learning
+tensorflow
+Pillow
+
+# HTTP requests and environment
+requests
+python-dotenv
+
+# OpenAI / Groq
+openai
+groq
+
+# LangChain and Auth
+langchain-groq
+langchain-core
+streamlit-oauth
+langchain-openai
+langchain-community
+# Model loading
+h5py        
+
+# Audio
+gTTS
+pydub
+av
