@@ -23,6 +23,7 @@ openai
 groq
 
 # LangChain and Auth
+langchain
 langchain-groq
 langchain-core
 streamlit-oauth
@@ -35,3 +36,4 @@ h5py
 gTTS
 pydub
 av
+
