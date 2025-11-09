@@ -104,7 +104,7 @@ def get_agent():
         tool_weather_info, 
         tool_soil_info, 
         tool_predict_crop,
-        tool_search_tomato_kb
+        
     ]
     
     return create_agent(
@@ -116,11 +116,10 @@ def get_agent():
 
 निम्न टूल्स का उपयोग करें:
 - मंडी, मौसम, मिट्टी संबंधित के लिए उनके उचित टूल्स
-- टमाटर खेती से जुड़े डेटा के लिए 'tool_search_tomato_kb' टूल
-- टमाटर पत्ती रोग होने पर 'tool_search_tomato_kb' टूल
+
 
 अगर सवाल टमाटर से संबंधित है और वैज्ञानिक जानकारी की मांग करता है, तो
-'Tomato Knowledge Base' से खोज करके जवाब दें।
+ से खोज करके जवाब दें।
 सभी जवाब सरल और हिंदी में दें।
 """
         )
