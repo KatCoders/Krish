@@ -622,7 +622,7 @@ if audio_file is not None:
                         tmp_path = tmp_file.name
                     
                     try:
-                        voice_text = st.session_state.stt.transcribe(tmp_path, language="hi")
+                        voice_text = st.session_state.stt.transcribe_audio(tmp_path, language="hi")
                     finally:
                         if os.path.exists(tmp_path):
                             os.unlink(tmp_path)
@@ -732,3 +732,4 @@ st.markdown("""
     <p><small>Powered by Groq AI, Data.gov.in, SoilGrids & WeatherAPI</small></p>
 </div>
 """, unsafe_allow_html=True)
+
