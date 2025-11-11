@@ -94,7 +94,7 @@ def get_agent():
         raise ValueError("GROQ_API_KEY is missing. Please set it in the .env file.")
     
     llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
+        model="meta-llama/llama-prompt-guard-2-86m",
         temperature=0,
         groq_api_key=GROQ_API_KEY
     )
@@ -159,6 +159,7 @@ def get_llm_response(query: str, tool_name=None) -> str:
 
     except Exception as e:
         return f"🤖 क्षमा करें! तकनीकी समस्या के कारण जवाब तैयार नहीं हो सका। ({str(e)})"
+
 
 
 
