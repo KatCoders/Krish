@@ -135,6 +135,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 # ------------------- Authentication Check -------------------
+# auth.py
+
+
 
 
 
@@ -578,7 +581,7 @@ if audio_file is not None:
                         tmp_path = tmp_file.name
                     
                     try:
-                        voice_text = st.session_state.stt.transcribe_audio(tmp_path, language="hi")
+                        voice_text = st.session_state.stt.transcribe(tmp_path, language="hi")
                     finally:
                         if os.path.exists(tmp_path):
                             os.unlink(tmp_path)
@@ -631,25 +634,19 @@ if audio_file is not None:
         img = Image.open(audio_file)
 
         with st.spinner("🔍 टमाटर रोग की भविष्यवाणी कर रहे हैं..."):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-              tmp_file.write(audio_file.read())
-              img_path = tmp_file.name
+            disease_name, confidence = predict_disease(img)
 
-    with st.spinner("🔍 टमाटर रोग खोज रहे हैं..."):
-        # ✅ Invoke the ML tool + LLM together
-        agent = get_agent()
-        result = agent.invoke({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"कृपया इस छवि से रोग पहचानें और उपचार सुझाएं। छवि पथ: {img_path}"
-                }
-            ]
-        })
+        st.success(f"🩺 पहचाना गया रोग: **{disease_name}** ({confidence*100:.1f}% भरोसा)")
+
+        # Query LLM
+        query = f"""
+        टमाटर के पौधे में '{disease_name}' बीमारी पाई गई है।
+        इसके घरेलू और रासायनिक उपचार बताएं। tool_search_tomato_kb का उपयोग करें।
+        """
+
         with st.spinner("🤖 विशेषज्ञ सलाह ले रहे हैं..."):
-            llm_response = result["messages"][-1].content
-     
-         
+            llm_response = get_llm_response(query)
+
         # Show response in chat
         with st.chat_message("assistant"):
             st.markdown(f"🤖 {llm_response}")
@@ -661,7 +658,13 @@ if audio_file is not None:
                 st.audio(audio_bytes, format="audio/mp3")
 
         # Save to history
-     
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": f"Diagnosed: {disease_name}\nConfidence: {confidence:.2%}\nAdvice:\n{llm_response}",
+            "type": "tomato_prediction",
+            "timestamp": datetime.now().isoformat()
+        })
+
 
            
 
@@ -688,4 +691,3 @@ st.markdown("""
     <p><small>Powered by Groq AI, Data.gov.in, SoilGrids & WeatherAPI</small></p>
 </div>
 """, unsafe_allow_html=True)
-
