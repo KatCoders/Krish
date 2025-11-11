@@ -138,7 +138,7 @@ st.markdown("""
 if "user" not in st.session_state:
     st.markdown("""
     <style>
-        body {
+        .body {
             background: linear-gradient(to top right, #d1ffea, #f4fff9);
         }
         .login-box {
@@ -729,3 +729,4 @@ st.markdown("""
     <p><small>Powered by Groq AI, Data.gov.in, SoilGrids & WeatherAPI</small></p>
 </div>
 """, unsafe_allow_html=True)
+
